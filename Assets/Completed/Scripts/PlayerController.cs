@@ -7,10 +7,36 @@ public class PlayerController : MonoBehaviour {
     public int speed;
     public float rotationSpeed;
     public float frictionFactor;
+    
+    public GameObject bullet;
+    public float bulletSpeed;
+
+    void Fire()
+    {
+        Vector3 positionShift = new Vector3(-Mathf.Sin(rb2d.rotation * Mathf.Deg2Rad), Mathf.Cos(rb2d.rotation * Mathf.Deg2Rad), 0);
+        positionShift = positionShift * 2;
+        GameObject bulletClone = (GameObject)Instantiate(bullet, transform.position + positionShift, transform.rotation);
+        //bulletClone.velocity = transform.forward * speed;
+
+        // You can also acccess other components / scripts of the clone
+        bulletClone.GetComponent<BulletScript>().addForce(rb2d.rotation, bulletSpeed);
+    }
+
     // Use this for initialization
-    void Start() {
+    void Start()
+    {
         rb2d = GetComponent<Rigidbody2D>();
     }
+
+    // Calls the fire method when holding down ctrl or mouse
+    void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            Fire();
+        }
+    }
+
 
     bool isTheSameSign(float a, float b)
     {

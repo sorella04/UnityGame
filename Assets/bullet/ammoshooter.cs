@@ -15,7 +15,7 @@ public class NewBehaviourScript : MonoBehaviour {
             GameObject ammo = Instantiate(prefab) as GameObject;
             ammo.transform.position = transform.position;
             Rigidbody2D rb = ammo.GetComponent<Rigidbody2D>();
-            rb.velocity = 
+            //rb.velocity = 
         }
 	}
 }
