@@ -22,5 +22,10 @@ namespace UnityStandardAssets.Effects
                 system.Play();
             }
         }
+
+        public void Restart()
+        {
+            Start();
+        }
     }
 }
