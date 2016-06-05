@@ -11,6 +11,8 @@ public class UFO_controller : MonoBehaviour {
     public GameObject bullet;
     public float bulletSpeed;
 
+    public GameObject Player;
+
 
     void Fire()
     {
@@ -77,14 +79,40 @@ public class UFO_controller : MonoBehaviour {
     // oblicza dystans miedzy punktami
     float getDistance(Vector2 point1, Vector2 point2)
     {
-        return 0.0f;
+        float dx = point1.x - point2.x;
+        float dy = point1.y - point2.y;
+
+        float dx2 = dx * dx;
+        float dy2 = dy * dy;
+
+        return Mathf.Sqrt(dx2 + dy2);
+    }
+
+    Vector2 getDelta(Vector2 a, Vector2 b)
+    {
+        return new Vector2(
+            a.x - b.x,
+            a.y - b.y
+            );
     }
 
     //oblicza wersor miedzy punktami
     Vector2 getVersor(Vector2 point1, Vector2 point2)
     {
-        //warto skorzystac z getDistance() ;)
-        return new Vector2(0.0f, 0.0f);
+        Vector2 delta = getDelta(point1, point2);
+        
+        return new Vector2(
+            delta.x / Mathf.Abs(delta.x),
+            delta.y / Mathf.Abs(delta.y)
+            );
+    }
+
+    Vector2 invertVector(Vector2 vector)
+    {
+        return new Vector2(
+            vector.x * -1.0f,
+            vector.y * -1.0f
+            );
     }
 
     /*
@@ -121,9 +149,60 @@ public class UFO_controller : MonoBehaviour {
         return Mathf.Abs(rb2d.rotation - angle) > 5; //dalej kąt różni się co najmniej o 5 stopni
     }
 
+    Vector2 getPosition(GameObject obj)
+    {
+        return obj.transform.position;
+    }
+
+    static Vector2[] blackHoles = {
+        new Vector2(-22, -22),
+        new Vector2(-22, 22),
+        new Vector2(22, 22),
+        new Vector2(22, -22)
+    };
+
+    Vector2 getNearestBlackHolePosition(Vector2 position)
+    {
+        float bestDistance = 100;
+        int bestIndex = 0;
+
+        for(int i=0; i<blackHoles.Length; ++i)
+        {
+            float currentDistance = getDistance(position, blackHoles[i]);
+
+            if (currentDistance < bestDistance)
+            {
+                bestDistance = currentDistance;
+                bestIndex = i;
+            }
+        }
+
+        return blackHoles[bestIndex];
+    }
+
+    Vector2 getTargetPossition(Vector2 playerPosition, Vector2 nearestBlackHoldePosition)
+    {
+        Vector2 versor = getVersor(nearestBlackHoldePosition, playerPosition);
+        versor = invertVector(versor);
+
+        return new Vector2(
+            playerPosition.x + versor.x,
+            playerPosition.y + versor.y
+            );
+    }
+
     // Update is called once per frame
     void FixedUpdate()
     {
+        //Pobierz pozycje gracza
+        Vector2 playerPosition = getPosition(Player);
+
+        //Pobierz pozycję najbliższej względem gracza czarnej dziury
+        Vector2 nearestBlackHoldePosition = getNearestBlackHolePosition(playerPosition);
+
+        //Ustal pozycję na którą musisz się przemieścić
+        Vector2 targetPosition = getTargetPossition(playerPosition, nearestBlackHoldePosition);
+
         float moveHorizontal = Input.GetAxis("Horizontal");// lewo -1 prawo 1 nic 0
         float moveVertical = Input.GetAxis("Vertical");
         Vector2 movment = new Vector2(-Mathf.Sin(rb2d.rotation * Mathf.Deg2Rad), Mathf.Cos(rb2d.rotation * Mathf.Deg2Rad));
