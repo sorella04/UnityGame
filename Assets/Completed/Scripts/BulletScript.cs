@@ -8,7 +8,7 @@ public class BulletScript : MonoBehaviour {
 
     void OnCollisionEnter2D(Collision2D col)
     {
-        if (col.gameObject.name == "UFO2")
+        if (col.gameObject.name == "UFO2" || col.gameObject.name == "Player")
         {
             GameObject expl = (GameObject)Instantiate(explosion, transform.position, transform.rotation);
             expl.GetComponent<UnityStandardAssets.Effects.ParticleSystemMultiplier>().Restart();
