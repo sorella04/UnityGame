@@ -72,7 +72,15 @@ public class UFO_controller : MonoBehaviour {
 
     float getAngleFromPoints(Vector2 from, Vector2 to)
     {
-        return Vector2.Angle(from, to);
+        float angle = Vector2.Angle(new Vector2(0f, 1f), from - to);
+        Vector3 cross = Vector3.Cross(from, to);
+
+        if (cross.z > 0f)
+        {
+            angle = 360 - angle;
+        }
+
+        return angle;
     }
 
     // oblicza dystans miedzy punktami
@@ -99,10 +107,12 @@ public class UFO_controller : MonoBehaviour {
     Vector2 getVersor(Vector2 point1, Vector2 point2)
     {
         Vector2 delta = getDelta(point1, point2);
+
+        float length = getDistance(new Vector2(0f, 0f), delta);
         
         return new Vector2(
-            delta.x / Mathf.Abs(delta.x),
-            delta.y / Mathf.Abs(delta.y)
+            delta.x / length,
+            delta.y / length
             );
     }
 
@@ -135,65 +145,24 @@ public class UFO_controller : MonoBehaviour {
     void fixRotatation(float angle)
     {
         float currentAngle = rb2d.rotation % 360f;
-        if (currentAngle < 0f) currentAngle = currentAngle + 360f;
-        //if (currentAngle >= 180f) currentAngle = currentAngle - 360f;
 
         angle = angle % 360f;
         if (angle < 0f) angle = angle + 360f;
+        if (rb2d.rotation < 0f) rb2d.rotation = rb2d.rotation + 360f;
 
-        //if()
+        Debug.logger.Log("target angle: " + angle + " current angle: " + currentAngle);
+        float leftRotation = angle - currentAngle;
+        float rightRotation = currentAngle - angle;
 
-            //if (currentAngle / Mathf.Abs(currentAngle) == angle / Mathf.Abs(angle))
-            //{
-            //    if (currentAngle - angle > 0f)
-            //    {
-            //        doRotate(1.0f);
-            //    }
-            //    else
-            //    {
-            //        doRotate(-1.0f);
-            //    }
-            //}
-            //else
-            //{
-            //    if (currentAngle < 0f)
-            //    {
-            //        currentAngle = currentAngle + 360f;
+        if (leftRotation < 0f) leftRotation = leftRotation + 360f;
+        if (rightRotation < 0f) rightRotation = rightRotation + 360f;
 
-            //        if(currentAngle - angle > 180f)
-            //        {
-            //            doRotate(-1.0f);
-            //        }
-            //        else
-            //        {
-            //            doRotate(1.0f);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        angle = angle + 360f;
-
-            //        if (angle - currentAngle > 180f)
-            //        {
-            //            doRotate(-1.0f);
-            //        }
-            //        else
-            //        {
-            //            doRotate(1.0f);
-            //        }
-            //    }
-            //}
-
-        Debug.logger.Log("w lewo? " + (currentAngle - angle) + " " + (angle - currentAngle));
-        if (currentAngle - angle > angle - currentAngle) //powinnien obracać się w prawo?
+        if(leftRotation > rightRotation)
         {
-            Debug.logger.Log("obróc w prawo" + angle + " " + currentAngle);
-            doRotate(-1.0f);
-        }
-        else
+            doRotate(1f);
+        } else
         {
-            Debug.logger.Log("obróc w lewo" + angle + " " + currentAngle);
-            doRotate(1.0f);
+            doRotate(-1f);
         }
     }
 
@@ -244,20 +213,6 @@ public class UFO_controller : MonoBehaviour {
             );
     }
 
-    float rotationBetweenPoints(Vector2 from, Vector2 to)
-    {
-        float angle = getAngleFromPoints(from, to);
-
-        Vector3 cross = Vector3.Cross(from, to);
-
-        if(cross.z > 0f)
-        {
-            angle = 360 - angle;
-        }
-
-        return angle;
-    }
-
     void gotoTargetPosition()
     {
         // Pobierz pozycje gracza
@@ -273,13 +228,15 @@ public class UFO_controller : MonoBehaviour {
         Vector2 ufoPosition = getPosition(this.gameObject);
 
         GameObject bulletClone = (GameObject)Instantiate(bullet, targetPosition, transform.rotation);
-        Destroy(bulletClone, 1.0f / 30f);
+        Destroy(bulletClone, 1.0f / 61f);
 
-        float angleToTargetPosition = rotationBetweenPoints(targetPosition, ufoPosition);
+        GameObject bulletClone2 = (GameObject)Instantiate(bullet, new Vector2(22, 22), transform.rotation);
+        Destroy(bulletClone2, 1.0f / 61f);
+
+        float angleToTargetPosition = getAngleFromPoints(targetPosition, ufoPosition);
 
         if (check_rotation(angleToTargetPosition))
         {
-            //rotateToPosition(targetPosition, ufoPosition);
             fixRotatation(angleToTargetPosition);
         } else
         {
