@@ -144,7 +144,7 @@ public class UFO_controller : MonoBehaviour {
 
     void fixRotatation(float angle)
     {
-        Debug.logger.Log("BEATKA " + angle);
+        //Debug.logger.Log("BEATKA " + angle);
         float currentAngle = rb2d.rotation % 360f;
 
         angle = angle % 360f;
@@ -229,20 +229,31 @@ public class UFO_controller : MonoBehaviour {
         //Pobierz własną pozycję
         Vector2 ufoPosition = getPosition(this.gameObject);
 
-        GameObject bulletClone = (GameObject)Instantiate(bullet, targetPosition, transform.rotation);
-        Destroy(bulletClone, 1.0f / 61f);
+        //GameObject bulletClone = (GameObject)Instantiate(bullet, targetPosition, transform.rotation);
+        //Destroy(bulletClone, 1.0f / 61f);
 
-        GameObject bulletClone2 = (GameObject)Instantiate(bullet, new Vector2(22, 22), transform.rotation);
-        Destroy(bulletClone2, 1.0f / 61f);
+        //GameObject bulletClone2 = (GameObject)Instantiate(bullet, new Vector2(22, 22), transform.rotation);
+        //Destroy(bulletClone2, 1.0f / 61f);
 
         float angleToTargetPosition = 360f - getAngleFromPoints(targetPosition, ufoPosition);
 
-        if (check_rotation(angleToTargetPosition))
+        if (check_rotation(angleToTargetPosition) && getDistance(targetPosition, ufoPosition) > 5.0)
         {
             fixRotatation(angleToTargetPosition);
-        } else
+        } else if (getDistance(targetPosition, ufoPosition) > 2.0)
         {
             doMove(1.0f);
+        } else
+        {
+            float angleToPlayerPosition = 360f - getAngleFromPoints(playerPosition, ufoPosition);
+            Debug.logger.Log("BEATKA " + angleToPlayerPosition);
+            if (check_rotation(angleToPlayerPosition))
+            {
+                fixRotatation(angleToPlayerPosition);
+            } else
+            {
+                doMove(1.0f);
+            }
         }
     }
 
