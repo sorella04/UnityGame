@@ -18,10 +18,8 @@ public class UFO_controller : MonoBehaviour {
     {
         Vector3 positionShift = new Vector3(-Mathf.Sin(rb2d.rotation * Mathf.Deg2Rad), Mathf.Cos(rb2d.rotation * Mathf.Deg2Rad), 0);
         positionShift = positionShift * 3;
-        GameObject bulletClone = (GameObject)Instantiate(bullet, transform.position + positionShift, transform.rotation);
-        //bulletClone.velocity = transform.forward * speed;
 
-        // You can also acccess other components / scripts of the clone
+        GameObject bulletClone = (GameObject)Instantiate(bullet, transform.position + positionShift, transform.rotation);
         bulletClone.GetComponent<BulletScript>().addForce(rb2d.rotation, bulletSpeed);
     }
 
@@ -71,9 +69,10 @@ public class UFO_controller : MonoBehaviour {
         }
     }
 
-    float getAngleFromVersor(Vector2 versor)
+
+    float getAngleFromPoints(Vector2 from, Vector2 to)
     {
-        return 0.0f;
+        return Vector2.Angle(from, to);
     }
 
     // oblicza dystans miedzy punktami
@@ -120,7 +119,8 @@ public class UFO_controller : MonoBehaviour {
     */
     void doRotate(float scalar)
     {
-
+        float newangle = rb2d.rotation - rotationSpeed * scalar;
+        rb2d.rotation = newangle;
     }
 
     /*
@@ -128,25 +128,78 @@ public class UFO_controller : MonoBehaviour {
     */
     void doMove(float scalar)
     {
-
+        Vector2 movment = new Vector2(-Mathf.Sin(rb2d.rotation * Mathf.Deg2Rad), Mathf.Cos(rb2d.rotation * Mathf.Deg2Rad));
+        rb2d.AddForce(movment * speed * scalar);
     }
 
-    void fixRotatation()
+    void fixRotatation(float angle)
     {
-        float angle = 0.0f; //to be changed
-        if (rb2d.rotation - angle > angle - rb2d.rotation + 360f) //powinnien obracać się w prawo?
+        float currentAngle = rb2d.rotation % 360f;
+        if (currentAngle < 0f) currentAngle = currentAngle + 360f;
+        //if (currentAngle >= 180f) currentAngle = currentAngle - 360f;
+
+        angle = angle % 360f;
+        if (angle < 0f) angle = angle + 360f;
+
+        //if()
+
+            //if (currentAngle / Mathf.Abs(currentAngle) == angle / Mathf.Abs(angle))
+            //{
+            //    if (currentAngle - angle > 0f)
+            //    {
+            //        doRotate(1.0f);
+            //    }
+            //    else
+            //    {
+            //        doRotate(-1.0f);
+            //    }
+            //}
+            //else
+            //{
+            //    if (currentAngle < 0f)
+            //    {
+            //        currentAngle = currentAngle + 360f;
+
+            //        if(currentAngle - angle > 180f)
+            //        {
+            //            doRotate(-1.0f);
+            //        }
+            //        else
+            //        {
+            //            doRotate(1.0f);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        angle = angle + 360f;
+
+            //        if (angle - currentAngle > 180f)
+            //        {
+            //            doRotate(-1.0f);
+            //        }
+            //        else
+            //        {
+            //            doRotate(1.0f);
+            //        }
+            //    }
+            //}
+
+        Debug.logger.Log("w lewo? " + (currentAngle - angle) + " " + (angle - currentAngle));
+        if (currentAngle - angle > angle - currentAngle) //powinnien obracać się w prawo?
         {
-            // obroc w prawo
+            Debug.logger.Log("obróc w prawo" + angle + " " + currentAngle);
+            doRotate(-1.0f);
         }
         else
         {
-            //obroc w lewo
+            Debug.logger.Log("obróc w lewo" + angle + " " + currentAngle);
+            doRotate(1.0f);
         }
     }
 
     bool check_rotation(float angle)
     {
-        return Mathf.Abs(rb2d.rotation - angle) > 5; //dalej kąt różni się co najmniej o 5 stopni
+        return Mathf.Abs(rb2d.rotation % 360f - angle) > 5f; //dalej kąt różni się co najmniej o 5 stopni
     }
 
     Vector2 getPosition(GameObject obj)
@@ -186,15 +239,28 @@ public class UFO_controller : MonoBehaviour {
         versor = invertVector(versor);
 
         return new Vector2(
-            playerPosition.x + versor.x,
-            playerPosition.y + versor.y
+            playerPosition.x + versor.x * 4.0f,
+            playerPosition.y + versor.y * 4.0f
             );
     }
 
-    // Update is called once per frame
-    void FixedUpdate()
+    float rotationBetweenPoints(Vector2 from, Vector2 to)
     {
-        //Pobierz pozycje gracza
+        float angle = getAngleFromPoints(from, to);
+
+        Vector3 cross = Vector3.Cross(from, to);
+
+        if(cross.z > 0f)
+        {
+            angle = 360 - angle;
+        }
+
+        return angle;
+    }
+
+    void gotoTargetPosition()
+    {
+        // Pobierz pozycje gracza
         Vector2 playerPosition = getPosition(Player);
 
         //Pobierz pozycję najbliższej względem gracza czarnej dziury
@@ -203,14 +269,33 @@ public class UFO_controller : MonoBehaviour {
         //Ustal pozycję na którą musisz się przemieścić
         Vector2 targetPosition = getTargetPossition(playerPosition, nearestBlackHoldePosition);
 
-        float moveHorizontal = Input.GetAxis("Horizontal");// lewo -1 prawo 1 nic 0
-        float moveVertical = Input.GetAxis("Vertical");
-        Vector2 movment = new Vector2(-Mathf.Sin(rb2d.rotation * Mathf.Deg2Rad), Mathf.Cos(rb2d.rotation * Mathf.Deg2Rad));
-        rb2d.AddForce(movment * speed * moveVertical);
-        float newangle = rb2d.rotation - rotationSpeed * moveHorizontal;
-        //Debug.logger.Log(rb2d.rotation);
-        //rb2d.MoveRotation(90f);
-        rb2d.rotation = newangle;
+        //Pobierz własną pozycję
+        Vector2 ufoPosition = getPosition(this.gameObject);
+
+        GameObject bulletClone = (GameObject)Instantiate(bullet, targetPosition, transform.rotation);
+        Destroy(bulletClone, 1.0f / 30f);
+
+        float angleToTargetPosition = rotationBetweenPoints(targetPosition, ufoPosition);
+
+        if (check_rotation(angleToTargetPosition))
+        {
+            //rotateToPosition(targetPosition, ufoPosition);
+            fixRotatation(angleToTargetPosition);
+        } else
+        {
+
+        }
+    }
+
+    // Update is called once per frame
+    void FixedUpdate()
+    {
+        gotoTargetPosition();
+        //old behavior
+        //float moveHorizontal = Input.GetAxis("Horizontal");// lewo -1 prawo 1 nic 0
+        //float moveVertical = Input.GetAxis("Vertical");
+        //doMove(moveVertical);
+        //doRotate(moveHorizontal);
         //Debug.logger.Log(rb2d.position);
 
         ApplyFriction();
