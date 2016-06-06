@@ -12,30 +12,29 @@ public class UFO_controller : MonoBehaviour {
     public float bulletSpeed;
 
     public GameObject Player;
+    public float timeBetweenFire;
 
+    private float timeToFire;
 
     void Fire()
     {
+        timeToFire = timeBetweenFire;
         Vector3 positionShift = new Vector3(-Mathf.Sin(rb2d.rotation * Mathf.Deg2Rad), Mathf.Cos(rb2d.rotation * Mathf.Deg2Rad), 0);
         positionShift = positionShift * 3;
 
         GameObject bulletClone = (GameObject)Instantiate(bullet, transform.position + positionShift, transform.rotation);
         bulletClone.GetComponent<BulletScript>().addForce(rb2d.rotation, bulletSpeed);
     }
-
-    // Use this for initialization
+    
     void Start()
     {
         rb2d = GetComponent<Rigidbody2D>();
+        timeToFire = timeBetweenFire;
     }
-
-    // Calls the fire method when holding down ctrl or mouse
+    
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
-        {
-            Fire();
-        }
+        timeToFire = timeToFire - Time.deltaTime;
     }
 
 
@@ -83,7 +82,7 @@ public class UFO_controller : MonoBehaviour {
         return angle;
     }
 
-    // oblicza dystans miedzy punktami
+
     float getDistance(Vector2 point1, Vector2 point2)
     {
         float dx = point1.x - point2.x;
@@ -102,8 +101,7 @@ public class UFO_controller : MonoBehaviour {
             a.y - b.y
             );
     }
-
-    //oblicza wersor miedzy punktami
+    
     Vector2 getVersor(Vector2 point1, Vector2 point2)
     {
         Vector2 delta = getDelta(point1, point2);
@@ -123,19 +121,13 @@ public class UFO_controller : MonoBehaviour {
             vector.y * -1.0f
             );
     }
-
-    /*
-        obraca o skalar. skalar powiniene być w przedziale <-1;1>, gdzie 1 to w <lewo/prawo> a -1 <prawo/lewo>
-    */
+    
     void doRotate(float scalar)
     {
         float newangle = rb2d.rotation - rotationSpeed * scalar;
         rb2d.rotation = newangle;
     }
-
-    /*
-        dodaje sile na rb obiektu, 1 to do produ, -1 do tylu. skalar w przedziale <-1;1>
-    */
+    
     void doMove(float scalar)
     {
         Vector2 movment = new Vector2(-Mathf.Sin(rb2d.rotation * Mathf.Deg2Rad), Mathf.Cos(rb2d.rotation * Mathf.Deg2Rad));
@@ -144,13 +136,11 @@ public class UFO_controller : MonoBehaviour {
 
     void fixRotatation(float angle)
     {
-        //Debug.logger.Log("BEATKA " + angle);
         float currentAngle = rb2d.rotation % 360f;
 
         angle = angle % 360f;
         if (angle < 0f) angle = angle + 360f;
-
-        Debug.logger.Log("target angle: " + angle + " current angle: " + currentAngle);
+        
         float leftRotation = angle - currentAngle;
         float rightRotation = currentAngle - angle;
 
@@ -215,44 +205,52 @@ public class UFO_controller : MonoBehaviour {
             );
     }
 
-    void gotoTargetPosition()
+    void tryFire()
     {
-        // Pobierz pozycje gracza
-        Vector2 playerPosition = getPosition(Player);
-
-        //Pobierz pozycję najbliższej względem gracza czarnej dziury
-        Vector2 nearestBlackHoldePosition = getNearestBlackHolePosition(playerPosition);
-
-        //Ustal pozycję na którą musisz się przemieścić
-        Vector2 targetPosition = getTargetPossition(playerPosition, nearestBlackHoldePosition);
-
-        //Pobierz własną pozycję
-        Vector2 ufoPosition = getPosition(this.gameObject);
-
-        //GameObject bulletClone = (GameObject)Instantiate(bullet, targetPosition, transform.rotation);
-        //Destroy(bulletClone, 1.0f / 61f);
-
-        //GameObject bulletClone2 = (GameObject)Instantiate(bullet, new Vector2(22, 22), transform.rotation);
-        //Destroy(bulletClone2, 1.0f / 61f);
-
-        float angleToTargetPosition = 360f - getAngleFromPoints(targetPosition, ufoPosition);
-
-        if (check_rotation(angleToTargetPosition) && getDistance(targetPosition, ufoPosition) > 5.0)
+        if(timeToFire <= 0.0f)
         {
-            fixRotatation(angleToTargetPosition);
-        } else if (getDistance(targetPosition, ufoPosition) > 2.0)
+            Fire();
+        }
+    }
+
+    void AI()
+    {
+        if (Player && this.gameObject)
         {
-            doMove(1.0f);
-        } else
-        {
-            float angleToPlayerPosition = 360f - getAngleFromPoints(playerPosition, ufoPosition);
-            Debug.logger.Log("BEATKA " + angleToPlayerPosition);
-            if (check_rotation(angleToPlayerPosition))
+            // Pobierz pozycje gracza
+            Vector2 playerPosition = getPosition(Player);
+
+            //Pobierz pozycję najbliższej względem gracza czarnej dziury
+            Vector2 nearestBlackHoldePosition = getNearestBlackHolePosition(playerPosition);
+
+            //Ustal pozycję na którą musisz się przemieścić
+            Vector2 targetPosition = getTargetPossition(playerPosition, nearestBlackHoldePosition);
+
+            //Pobierz własną pozycję
+            Vector2 ufoPosition = getPosition(this.gameObject);
+
+            float angleToTargetPosition = 360f - getAngleFromPoints(targetPosition, ufoPosition);
+
+            if (check_rotation(angleToTargetPosition) && getDistance(targetPosition, ufoPosition) > 5.0)
             {
-                fixRotatation(angleToPlayerPosition);
-            } else
+                fixRotatation(angleToTargetPosition);
+            }
+            else if (getDistance(targetPosition, ufoPosition) > 5.0)
             {
                 doMove(1.0f);
+            }
+            else
+            {
+                float angleToPlayerPosition = 360f - getAngleFromPoints(playerPosition, ufoPosition);
+                if (check_rotation(angleToPlayerPosition))
+                {
+                    fixRotatation(angleToPlayerPosition);
+                }
+                else
+                {
+                    tryFire();
+                    doMove(1.0f);
+                }
             }
         }
     }
@@ -260,13 +258,7 @@ public class UFO_controller : MonoBehaviour {
     // Update is called once per frame
     void FixedUpdate()
     {
-        gotoTargetPosition();
-        //old behavior
-        //float moveHorizontal = Input.GetAxis("Horizontal");// lewo -1 prawo 1 nic 0
-        //float moveVertical = Input.GetAxis("Vertical");
-        //doMove(moveVertical);
-        //doRotate(moveHorizontal);
-        //Debug.logger.Log(rb2d.position);
+        AI();
 
         ApplyFriction();
     }
