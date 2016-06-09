@@ -18,7 +18,7 @@ public class UFO_controller : MonoBehaviour {
 
     void Fire()
     {
-        timeToFire = timeBetweenFire;
+        //timeToFire = timeBetweenFire;
         Vector3 positionShift = new Vector3(-Mathf.Sin(rb2d.rotation * Mathf.Deg2Rad), Mathf.Cos(rb2d.rotation * Mathf.Deg2Rad), 0);
         positionShift = positionShift * 3;
 
@@ -209,6 +209,7 @@ public class UFO_controller : MonoBehaviour {
     {
         if(timeToFire <= 0.0f)
         {
+            timeToFire = timeBetweenFire;
             Fire();
         }
     }
